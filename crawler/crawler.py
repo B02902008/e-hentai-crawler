@@ -15,7 +15,7 @@ def create_viewer(base: str, title: str, num: int):
     with open(path, 'w') as f:
         f.write('<html><head><title>{}</title></head><body>'.format(title))
         for i in range(num):
-            f.write('<img src="./{}.jpg">'.format(i))
+            f.write('<img src="./{}.jpg">'.format(i + 1))
         f.write('</body></html>')
 
 
