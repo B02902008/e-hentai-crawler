@@ -1,7 +1,6 @@
 import os
 import sys
 from crawler import util
-from bs4 import BeautifulSoup
 
 
 def create_viewer(base: str, title: str, num: int):
@@ -20,24 +19,19 @@ def create_viewer(base: str, title: str, num: int):
         f.write('</body></html>')
 
 
-def crawl_page(base: str, soup: BeautifulSoup) -> int:
-    """Return an integer
+def crawl_next_page(url: str) -> (str, str):
+    """Return a 2-tuple (string, string)
 
-    :param base: 
-    :param soup: the beautiful soup of the target page
-    :return: return the max page number of downloaded image
+    :param url: the image page url
+    :return: the image source url and the next image page url
     """
-    max_index = 0
-    images = soup.find_all('div', attrs={'class': 'gdtm'})
-    for image in images:
-        if image.find('a') is None or image.find('a').get('href') is None:
-            continue
-        link = image.find('a').get('href')
-        index = link.split('-')[-1]
-        print('Getting image {} ...'.format(index))
-        if util.download_image(base, index, link):
-            max_index = max(max_index, int(index))
-    return max_index
+    soup = util.get_html_soup(url)
+    try:
+        image_url = soup.find(id='i3').a.img.get('src')
+        next_page = soup.find(id='i3').a.get('href')
+    except AttributeError:
+        return '', ''
+    return image_url if image_url is not None else '', next_page if next_page is not None else ''
 
 
 def crawl_book(dist: str, url: str) -> (bool, str):
@@ -45,11 +39,10 @@ def crawl_book(dist: str, url: str) -> (bool, str):
 
     Crawling steps:
     1. Check the download destination
-    2. Get the home page of the book, and extract title and page tabs
+    2. Get the home page of the book, and extract title, total pages, and url to first page
     3. Create the directory for the book
     4. Get each page of the book
-    5. Get each image of each page
-    6. Create HTML viewer
+    5. Create HTML viewer
 
     :param dist: the download destination directory
     :param url: the e-hentai url to download
@@ -63,8 +56,10 @@ def crawl_book(dist: str, url: str) -> (bool, str):
     home_soup = util.get_html_soup(url)
     try:
         title = home_soup.find(id='gj').text
-        pagetabs = home_soup.find('table', attrs={'class': 'ptt'}).find_all('td')[2:-1]
-    except (AttributeError, IndexError):
+        infos = home_soup.find(id='gdd').table.tbody.find_all('td', attrs={'class': 'gdt2'})
+        pages = int([info.text.split()[0] for info in infos if 'page' in info.text][0])
+        first = home_soup.find('div', attrs={'class': 'gdtm'})
+    except (AttributeError, IndexError, TypeError):
         return False, 'Not a valid e-hentai url'
 
     # Step 3
@@ -75,21 +70,14 @@ def crawl_book(dist: str, url: str) -> (bool, str):
         return False, 'Failed to create directory for book'
 
     # Step 4
-    pages = [home_soup]
-    for pagetab in pagetabs:
-        if pagetab.find('a') is None or pagetab.find('a').get('href') is None:
-            continue
-        link = pagetab.find('a').get('href')
-        print('Getting page {} ...'.format(int(link.split('=')[-1]) + 1))
-        pages.append(util.get_html_soup(link))
+    link = first.div.a.get('href')
+    for i in range(pages):
+        img, link = crawl_next_page(link)
+        print('Download image {}.'.format(i + 1))
+        util.download_image(path, str(i + 1), img)
 
     # Step 5
-    max_page = 0
-    for page in pages:
-        max_page = max(max_page, crawl_page(path, page))
-
-    # Step 6
-    create_viewer(path, title, max_page)
+    create_viewer(path, title, pages)
 
     return True, ''
 

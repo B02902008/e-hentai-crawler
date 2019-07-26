@@ -10,15 +10,10 @@ def download_image(base: str, num: str, url: str) -> bool:
 
     :param base: the download destination directory
     :param num: index of the the image
-    :param url: the image page url
+    :param url: the image source url
     :return: whether the download succeed
     """
-    soup = get_html_soup(url)
-    try:
-        link = soup.find(id='img').get('src')
-    except AttributeError:
-        return False
-    request.urlretrieve(link, os.path.join(base, '{}.jpg'.format(num)))
+    request.urlretrieve(url, os.path.join(base, '{}.jpg'.format(num)))
     return True
 
 
