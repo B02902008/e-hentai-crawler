@@ -56,7 +56,7 @@ def crawl_book(dist: str, url: str) -> (bool, str):
     home_soup = util.get_html_soup(url)
     try:
         title = home_soup.find(id='gj').text
-        infos = home_soup.find(id='gdd').table.tbody.find_all('td', attrs={'class': 'gdt2'})
+        infos = home_soup.find(id='gdd').table.find_all('td', attrs={'class': 'gdt2'})
         pages = int([info.text.split()[0] for info in infos if 'page' in info.text][0])
         first = home_soup.find('div', attrs={'class': 'gdtm'})
     except (AttributeError, IndexError, TypeError):

@@ -46,8 +46,8 @@ def get_html_soup(url: str) -> BeautifulSoup:
         time.sleep(5)
         response = request.urlopen(req)
     if response.getcode() != 200:
-        return BeautifulSoup('', 'html5lib')
-    return BeautifulSoup(response.read().decode('utf-8'), 'html5lib')
+        return BeautifulSoup('', 'lxml')
+    return BeautifulSoup(response.read().decode('utf-8'), 'lxml')
 
 
 if __name__ == '__main__':
